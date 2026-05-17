@@ -1,0 +1,626 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Upload, FileVideo, Play, Pause, SkipBack, SkipForward, Volume2,
+  Brain, Sparkles, CheckCircle2, Clock, AlertCircle, Download,
+  Settings, User, Bell, Search, Home, FolderOpen, PenTool,
+  Moon, Sun, ChevronRight, ChevronDown, X, Check, Copy,
+  FileText, File, FileJson, Subtitles, Table2, MoreHorizontal,
+  Eye, EyeOff, Type, AlignLeft, AlignCenter, Bold, Italic,
+  Underline, Undo2, Redo2, Maximize2, Minimize2, Share2,
+  HelpCircle, LogOut, CreditCard, Shield, Globe, Palette,
+  BellRing, Zap, Wifi, WifiOff, RefreshCw, Trash2, Edit3,
+  ChevronLeft, BarChart3, Users, Mic, Video, Monitor, Smartphone,
+  ArrowRight, ExternalLink, Star, Heart, MessageSquare, Layers,
+  Grid3x3, List, Filter, SortAsc, Calendar, Hash, Tag
+} from 'lucide-react';
+
+const recentProjects = [
+  { id: 1, title: 'Product Demo v2', duration: '3:24', date: 'Today', status: 'complete', thumb: 'bg-gradient-to-br from-blue-400 to-indigo-600' },
+  { id: 2, title: 'Training Module 5', duration: '12:08', date: 'Yesterday', status: 'complete', thumb: 'bg-gradient-to-br from-teal-400 to-cyan-600' },
+  { id: 3, title: 'Marketing Reel Q1', duration: '1:45', date: '3 days ago', status: 'processing', thumb: 'bg-gradient-to-br from-orange-400 to-red-500' },
+  { id: 4, title: 'Tutorial: Getting Started', duration: '8:30', date: '1 week ago', status: 'complete', thumb: 'bg-gradient-to-br from-purple-400 to-pink-500' },
+];
+
+const scriptSegments = [
+  { time: '00:00', end: '00:08', text: 'Welcome to ScriptFlow — the intelligent platform that transforms your silent videos into professional voiceover scripts.', active: true, scene: 'Title card with animated logo reveal' },
+  { time: '00:08', end: '00:18', text: 'In this demonstration, we see the clean, modern dashboard where users can upload their video content with a simple drag-and-drop interface.', active: false, scene: 'Dashboard overview with upload area' },
+  { time: '00:18', end: '00:28', text: 'The AI engine analyzes each frame, detecting objects, text overlays, scene transitions, and visual context to generate natural narration.', active: false, scene: 'AI processing visualization with frame analysis' },
+  { time: '00:28', end: '00:38', text: 'Users can review and edit the generated script in real-time, with timestamp synchronization ensuring perfect alignment with the visuals.', active: false, scene: 'Split-screen editor with video playback' },
+  { time: '00:38', end: '00:48', text: 'Multiple export formats are available — from plain text to subtitle files — making it easy to integrate into any production workflow.', active: false, scene: 'Export modal showing format options' },
+  { time: '00:48', end: '00:55', text: 'ScriptFlow: transform your visuals into words, effortlessly. Start your free trial today.', active: false, scene: 'Closing card with CTA' },
+];
+
+const processingSteps = [
+  { label: 'Uploading video', status: 'complete', detail: 'product-demo-v3.mp4 (245 MB)' },
+  { label: 'Extracting visual frames', status: 'complete', detail: '1,650 frames at 30fps' },
+  { label: 'Analyzing scene composition', status: 'complete', detail: '12 scenes detected' },
+  { label: 'Detecting on-screen text & objects', status: 'active', detail: 'Processing frame 1,102 of 1,650' },
+  { label: 'Generating voiceover script', status: 'pending', detail: 'Waiting for analysis' },
+  { label: 'Synchronizing timestamps', status: 'pending', detail: 'Waiting for script' },
+  { label: 'Finalizing & quality check', status: 'pending', detail: 'Waiting' },
+];
+
+const exportFormats = [
+  { id: 'txt', name: 'Plain Text', ext: '.txt', icon: FileText, desc: 'Simple text file with script content' },
+  { id: 'docx', name: 'Microsoft Word', ext: '.docx', icon: File, desc: 'Formatted document with timestamps' },
+  { id: 'pdf', name: 'PDF Document', ext: '.pdf', icon: File, desc: 'Print-ready formatted script' },
+  { id: 'srt', name: 'Subtitle File', ext: '.srt', icon: Subtitles, desc: 'Standard subtitle format for video' },
+  { id: 'json', name: 'JSON', ext: '.json', icon: FileJson, desc: 'Structured data with timestamps' },
+  { id: 'csv', name: 'CSV', ext: '.csv', icon: Table2, desc: 'Spreadsheet-compatible format' },
+];
+
+const notifications = [
+  { id: 1, type: 'success', title: 'Script generation complete', desc: '"Product Demo v2" is ready to review', time: '2 min ago', read: false },
+  { id: 2, type: 'progress', title: 'Processing in progress', desc: '"Marketing Reel Q1" — 67% complete', time: '15 min ago', read: false },
+  { id: 3, type: 'info', title: 'Export ready', desc: 'Your PDF export is ready to download', time: '1 hour ago', read: true },
+  { id: 4, type: 'warning', title: 'Storage at 80%', desc: 'Consider upgrading your plan', time: '3 hours ago', read: true },
+];
+
+export default function ScriptFlowApp() {
+  const [screen, setScreen] = useState('upload');
+  const [dark, setDark] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
+  const [selectedExport, setSelectedExport] = useState('pdf');
+  const [includeTimestamps, setIncludeTimestamps] = useState(true);
+  const [includeSpeaker, setIncludeSpeaker] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [activeSegment, setActiveSegment] = useState(0);
+  const [editingSegment, setEditingSegment] = useState(null);
+  const [scriptData, setScriptData] = useState(scriptSegments);
+  const [dragOver, setDragOver] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('appearance');
+  const [toast, setToast] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const bg = dark ? 'bg-slate-900' : 'bg-gray-50';
+  const cardBg = dark ? 'bg-slate-800' : 'bg-white';
+  const cardBorder = dark ? 'border-slate-700' : 'border-gray-200';
+  const textPrimary = dark ? 'text-gray-100' : 'text-gray-900';
+  const textSecondary = dark ? 'text-gray-400' : 'text-gray-500';
+  const textTertiary = dark ? 'text-gray-500' : 'text-gray-400';
+  const inputBg = dark ? 'bg-slate-700' : 'bg-gray-50';
+  const hoverBg = dark ? 'hover:bg-slate-700' : 'hover:bg-gray-100';
+  const sidebarBg = dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200';
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  useEffect(() => {
+    if (screen === 'processing') {
+      setProcessingProgress(0);
+      const interval = setInterval(() => {
+        setProcessingProgress(p => {
+          if (p >= 100) { clearInterval(interval); setTimeout(() => setScreen('editor'), 800); return 100; }
+          return p + 0.5;
+        });
+      }, 60);
+      return () => clearInterval(interval);
+    }
+  }, [screen]);
+
+  useEffect(() => {
+    if (isPlaying && screen === 'editor') {
+      const interval = setInterval(() => {
+        setCurrentTime(t => {
+          const next = t + 1;
+          if (next >= 55) { setIsPlaying(false); return 0; }
+          const segIdx = scriptData.findIndex((s, i) => {
+            const start = parseInt(s.time.split(':')[1]);
+            const end = parseInt(s.end.split(':')[1]);
+            return next >= start && next < end;
+          });
+          if (segIdx >= 0) setActiveSegment(segIdx);
+          return next;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isPlaying, screen, scriptData]);
+
+  const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+  const Sidebar = () => (
+    <div className={`${sidebarCollapsed ? 'w-16' : 'w-56'} flex-shrink-0 ${sidebarBg} border-r flex flex-col transition-all duration-300`}>
+      <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} px-4 h-14 border-b ${cardBorder}`}>
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-teal-500 flex items-center justify-center flex-shrink-0">
+          <Zap className="w-4 h-4 text-white" />
+        </div>
+        {!sidebarCollapsed && <span className={`font-bold ${textPrimary} text-sm`}>ScriptFlow</span>}
+      </div>
+      <nav className="flex-1 py-2 px-2 space-y-0.5">
+        {[
+          { id: 'upload', icon: Home, label: 'Dashboard' },
+          { id: 'projects', icon: FolderOpen, label: 'Projects' },
+          { id: 'editor', icon: PenTool, label: 'Editor' },
+          { id: 'analytics', icon: BarChart3, label: 'Analytics' },
+        ].map(item => (
+          <button key={item.id} onClick={() => setScreen(item.id === 'projects' ? 'upload' : item.id === 'analytics' ? 'upload' : item.id)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${screen === item.id ? (dark ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-50 text-blue-700') : `${textSecondary} ${hoverBg}`} ${sidebarCollapsed ? 'justify-center' : ''}`}>
+            <item.icon className="w-4.5 h-4.5 flex-shrink-0" style={{ width: 18, height: 18 }} />
+            {!sidebarCollapsed && <span>{item.label}</span>}
+          </button>
+        ))}
+      </nav>
+      <div className={`p-2 border-t ${cardBorder} space-y-0.5`}>
+        <button onClick={() => setScreen('settings')} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium ${screen === 'settings' ? (dark ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-50 text-blue-700') : `${textSecondary} ${hoverBg}`} ${sidebarCollapsed ? 'justify-center' : ''}`}>
+          <Settings className="flex-shrink-0" style={{ width: 18, height: 18 }} />
+          {!sidebarCollapsed && <span>Settings</span>}
+        </button>
+        <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm ${textTertiary} ${hoverBg} ${sidebarCollapsed ? 'justify-center' : ''}`}>
+          {sidebarCollapsed ? <ChevronRight style={{ width: 18, height: 18 }} /> : <><ChevronLeft style={{ width: 18, height: 18 }} /><span>Collapse</span></>}
+        </button>
+      </div>
+    </div>
+  );
+
+  const TopBar = () => (
+    <div className={`h-14 ${cardBg} border-b ${cardBorder} flex items-center justify-between px-6 flex-shrink-0`}>
+      <div className={`flex items-center gap-2 ${inputBg} rounded-lg px-3 py-1.5 w-72`}>
+        <Search className={`w-4 h-4 ${textTertiary}`} />
+        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search projects, scripts..." className={`bg-transparent text-sm ${textPrimary} outline-none w-full placeholder:${textTertiary}`} />
+      </div>
+      <div className="flex items-center gap-2">
+        <button onClick={() => setDark(!dark)} className={`p-2 rounded-lg ${hoverBg} transition-colors`}>
+          {dark ? <Sun className="w-4.5 h-4.5 text-amber-400" style={{ width: 18, height: 18 }} /> : <Moon className={`text-gray-400`} style={{ width: 18, height: 18 }} />}
+        </button>
+        <div className="relative">
+          <button onClick={() => setShowNotif(!showNotif)} className={`p-2 rounded-lg ${hoverBg} transition-colors relative`}>
+            <Bell className={textSecondary} style={{ width: 18, height: 18 }} />
+            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          </button>
+          <AnimatePresence>
+            {showNotif && (
+              <motion.div initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                className={`absolute right-0 top-full mt-2 w-80 ${cardBg} rounded-xl shadow-2xl border ${cardBorder} z-50 overflow-hidden`}>
+                <div className={`flex items-center justify-between px-4 py-3 border-b ${cardBorder}`}>
+                  <span className={`text-sm font-semibold ${textPrimary}`}>Notifications</span>
+                  <button className="text-xs text-blue-500 font-medium">Mark all read</button>
+                </div>
+                <div className="max-h-72 overflow-y-auto">
+                  {notifications.map(n => (
+                    <div key={n.id} className={`px-4 py-3 border-b ${cardBorder} ${hoverBg} cursor-pointer flex gap-3 ${!n.read ? (dark ? 'bg-blue-900/10' : 'bg-blue-50/50') : ''}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${n.type === 'success' ? 'bg-emerald-100 text-emerald-600' : n.type === 'progress' ? 'bg-blue-100 text-blue-600' : n.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600'}`}>
+                        {n.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : n.type === 'progress' ? <Clock className="w-4 h-4" /> : n.type === 'warning' ? <AlertCircle className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-medium ${textPrimary} truncate`}>{n.title}</p>
+                        <p className={`text-xs ${textTertiary} truncate mt-0.5`}>{n.desc}</p>
+                        <p className={`text-xs ${textTertiary} mt-1`}>{n.time}</p>
+                      </div>
+                      {!n.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold cursor-pointer">JD</div>
+      </div>
+    </div>
+  );
+
+  const UploadScreen = () => (
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6">
+          <h1 className={`text-2xl font-bold ${textPrimary}`}>Dashboard</h1>
+          <p className={`text-sm ${textSecondary} mt-1`}>Upload a video and let AI generate a professional voiceover script from its visuals.</p>
+        </div>
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total Scripts', val: '48', icon: FileText, color: 'from-blue-500 to-blue-600' },
+            { label: 'Processing', val: '2', icon: Clock, color: 'from-teal-500 to-cyan-600' },
+            { label: 'This Month', val: '12', icon: Calendar, color: 'from-purple-500 to-indigo-600' },
+            { label: 'Avg. Quality', val: '94%', icon: Star, color: 'from-amber-500 to-orange-500' },
+          ].map((s, i) => (
+            <div key={i} className={`${cardBg} rounded-xl border ${cardBorder} p-4`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center`}>
+                  <s.icon className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <p className={`text-2xl font-bold ${textPrimary}`}>{s.val}</p>
+              <p className={`text-xs ${textSecondary} mt-0.5`}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className={`${cardBg} rounded-xl border ${cardBorder} p-8 mb-6`}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); setScreen('processing'); }}>
+          <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-all ${dragOver ? 'border-blue-500 bg-blue-50/50' : (dark ? 'border-slate-600' : 'border-gray-300')}`}>
+            <motion.div animate={{ y: dragOver ? -5 : 0 }} className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-teal-500 mb-4">
+              <Upload className="w-7 h-7 text-white" />
+            </motion.div>
+            <h3 className={`text-lg font-semibold ${textPrimary} mb-1`}>Upload your video</h3>
+            <p className={`text-sm ${textSecondary} mb-4`}>Drag & drop a video file, or click to browse. We'll analyze the visuals and generate a script.</p>
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => setScreen('processing')} className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium text-sm hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/25">
+                Browse Files
+              </button>
+              <span className={`text-xs ${textTertiary}`}>MP4, MOV, AVI, WebM • Max 2GB</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-3">
+          <h2 className={`text-base font-semibold ${textPrimary}`}>Recent Projects</h2>
+          <button className="text-xs text-blue-500 font-medium">View All</button>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {recentProjects.map(p => (
+            <button key={p.id} onClick={() => p.status === 'complete' ? setScreen('editor') : null}
+              className={`${cardBg} rounded-xl border ${cardBorder} p-4 flex gap-4 text-left ${hoverBg} transition-all`}>
+              <div className={`w-20 h-14 rounded-lg ${p.thumb} flex items-center justify-center flex-shrink-0`}>
+                <Play className="w-5 h-5 text-white/80" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${textPrimary} truncate`}>{p.title}</p>
+                <p className={`text-xs ${textSecondary} mt-0.5`}>{p.duration} • {p.date}</p>
+                <div className={`inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${p.status === 'complete' ? (dark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700') : (dark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-700')}`}>
+                  {p.status === 'complete' ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                  {p.status === 'complete' ? 'Complete' : 'Processing'}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const ProcessingScreen = () => {
+    const currentStep = processingSteps.findIndex(s => s.status === 'active');
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setScreen('upload')} className={`flex items-center gap-1 text-sm ${textSecondary} mb-4 ${hoverBg} px-2 py-1 rounded-lg`}>
+            <ChevronLeft className="w-4 h-4" /> Back to Dashboard
+          </button>
+          <div className="grid grid-cols-5 gap-6">
+            <div className="col-span-2">
+              <div className={`${cardBg} rounded-xl border ${cardBorder} overflow-hidden`}>
+                <div className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center relative">
+                  <FileVideo className="w-12 h-12 text-slate-600" />
+                  <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">0:55</div>
+                </div>
+                <div className="p-4">
+                  <p className={`text-sm font-medium ${textPrimary}`}>product-demo-v3.mp4</p>
+                  <p className={`text-xs ${textSecondary} mt-1`}>245 MB • 1920×1080 • 30fps</p>
+                </div>
+              </div>
+            </div>
+            <div className="col-span-3">
+              <div className={`${cardBg} rounded-xl border ${cardBorder} p-6`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <motion.div animate={{ rotate: processingProgress < 100 ? 360 : 0 }} transition={{ duration: 2, repeat: processingProgress < 100 ? Infinity : 0, ease: 'linear' }}
+                    className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center">
+                    <Brain className="w-5 h-5 text-white" />
+                  </motion.div>
+                  <div>
+                    <h2 className={`text-base font-semibold ${textPrimary}`}>
+                      {processingProgress >= 100 ? 'Processing Complete!' : 'Generating Script...'}
+                    </h2>
+                    <p className={`text-xs ${textSecondary}`}>AI is analyzing your video's visual content</p>
+                  </div>
+                </div>
+                <div className={`h-2 ${dark ? 'bg-slate-700' : 'bg-gray-200'} rounded-full overflow-hidden mb-1`}>
+                  <motion.div className="h-full bg-gradient-to-r from-blue-500 to-teal-500 rounded-full" style={{ width: `${processingProgress}%` }} />
+                </div>
+                <p className={`text-xs ${textSecondary} text-right mb-6`}>{Math.round(processingProgress)}% • ~{Math.max(0, Math.round((100 - processingProgress) * 0.3))}s remaining</p>
+                <div className="space-y-3">
+                  {processingSteps.map((step, i) => {
+                    const stepStatus = processingProgress >= ((i + 1) / processingSteps.length) * 100 ? 'complete' : processingProgress >= (i / processingSteps.length) * 100 ? 'active' : 'pending';
+                    return (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          {stepStatus === 'complete' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> :
+                           stepStatus === 'active' ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} className="w-5 h-5 rounded-full border-2 border-blue-500 border-t-transparent" /> :
+                           <div className={`w-5 h-5 rounded-full border-2 ${dark ? 'border-slate-600' : 'border-gray-300'}`} />}
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium ${stepStatus === 'pending' ? textTertiary : textPrimary}`}>{step.label}</p>
+                          <p className={`text-xs ${textTertiary}`}>{step.detail}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const EditorScreen = () => (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`h-10 ${cardBg} border-b ${cardBorder} flex items-center px-4 gap-2 flex-shrink-0`}>
+        <button onClick={() => setScreen('upload')} className={`p-1 rounded ${hoverBg}`}><ChevronLeft className={`w-4 h-4 ${textSecondary}`} /></button>
+        <span className={`text-sm font-medium ${textPrimary}`}>Product Demo v3</span>
+        <span className={`text-xs ${textTertiary} ml-1`}>• Last saved 2 min ago</span>
+        <div className="flex-1" />
+        {[Undo2, Redo2].map((Icon, i) => <button key={i} className={`p-1.5 rounded ${hoverBg}`}><Icon className={`w-4 h-4 ${textTertiary}`} /></button>)}
+        <div className={`w-px h-5 ${dark ? 'bg-slate-600' : 'bg-gray-300'} mx-1`} />
+        {[Bold, Italic, Underline].map((Icon, i) => <button key={i} className={`p-1.5 rounded ${hoverBg}`}><Icon className={`w-4 h-4 ${textSecondary}`} /></button>)}
+        <div className="flex-1" />
+        <button onClick={() => setShowExport(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-xs font-medium hover:from-blue-700 hover:to-blue-800 shadow-md shadow-blue-500/20">
+          <Download className="w-3.5 h-3.5" /> Export
+        </button>
+        <button className={`p-1.5 rounded ${hoverBg}`}><Share2 className={`w-4 h-4 ${textSecondary}`} /></button>
+      </div>
+      <div className="flex-1 flex overflow-hidden">
+        <div className={`w-2/5 flex flex-col border-r ${cardBorder}`}>
+          <div className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 relative flex items-center justify-center m-3 rounded-lg overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-teal-500/20" />
+            <div className="relative flex flex-col items-center">
+              <Monitor className="w-10 h-10 text-slate-500 mb-2" />
+              <p className="text-xs text-slate-400">Video Preview</p>
+              <p className="text-xs text-slate-500 mt-0.5">{scriptData[activeSegment]?.scene}</p>
+            </div>
+            <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded font-mono">{formatTime(currentTime)}</div>
+          </div>
+          <div className={`px-3 pb-3`}>
+            <div className={`${dark ? 'bg-slate-700' : 'bg-gray-200'} rounded-full h-1.5 mb-2 cursor-pointer relative`}>
+              <div className="h-full bg-gradient-to-r from-blue-500 to-teal-500 rounded-full" style={{ width: `${(currentTime / 55) * 100}%` }} />
+              <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md border-2 border-blue-500" style={{ left: `${(currentTime / 55) * 100}%`, marginLeft: -6 }} />
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => { setCurrentTime(0); setActiveSegment(0); }} className={`p-1.5 rounded-lg ${hoverBg}`}><SkipBack className={`w-4 h-4 ${textSecondary}`} /></button>
+              <button onClick={() => setIsPlaying(!isPlaying)} className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+              </button>
+              <button className={`p-1.5 rounded-lg ${hoverBg}`}><SkipForward className={`w-4 h-4 ${textSecondary}`} /></button>
+              <span className={`text-xs font-mono ${textTertiary}`}>{formatTime(currentTime)} / 00:55</span>
+            </div>
+          </div>
+          <div className={`border-t ${cardBorder} p-3`}>
+            <h3 className={`text-xs font-semibold ${textSecondary} uppercase tracking-wider mb-2`}>Scene Detection</h3>
+            <div className="flex gap-1">
+              {scriptData.map((seg, i) => (
+                <button key={i} onClick={() => { setActiveSegment(i); setCurrentTime(parseInt(seg.time.split(':')[1])); }}
+                  className={`flex-1 h-8 rounded transition-all ${i === activeSegment ? 'ring-2 ring-blue-500 ring-offset-1' : ''} ${
+                    i === 0 ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                    i === 1 ? 'bg-gradient-to-r from-teal-400 to-teal-500' :
+                    i === 2 ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
+                    i === 3 ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+                    i === 4 ? 'bg-gradient-to-r from-pink-400 to-pink-500' :
+                    'bg-gradient-to-r from-indigo-400 to-indigo-500'
+                  }`}>
+                  <span className="text-white text-xs font-medium opacity-80">{i + 1}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`text-sm font-semibold ${textPrimary}`}>Voiceover Script</h3>
+            <div className="flex items-center gap-1">
+              <span className={`text-xs ${textTertiary}`}>{scriptData.length} segments</span>
+              <span className={`text-xs ${textTertiary}`}>•</span>
+              <span className={`text-xs ${textTertiary}`}>~{scriptData.reduce((a, s) => a + s.text.split(' ').length, 0)} words</span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {scriptData.map((seg, i) => (
+              <motion.div key={i} layout className={`${cardBg} rounded-lg border ${i === activeSegment ? (dark ? 'border-blue-500 bg-blue-900/10' : 'border-blue-400 bg-blue-50/50') : cardBorder} p-3 cursor-pointer transition-all`}
+                onClick={() => { setActiveSegment(i); setCurrentTime(parseInt(seg.time.split(':')[1])); }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${i === activeSegment ? 'bg-blue-600 text-white' : (dark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600')}`}>{seg.time}</span>
+                    <ChevronRight className={`w-3 h-3 ${textTertiary}`} />
+                    <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${dark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>{seg.end}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={e => { e.stopPropagation(); setEditingSegment(editingSegment === i ? null : i); }} className={`p-1 rounded ${hoverBg}`}>
+                      <Edit3 className={`w-3.5 h-3.5 ${textTertiary}`} />
+                    </button>
+                    <button className={`p-1 rounded ${hoverBg}`}><Copy className={`w-3.5 h-3.5 ${textTertiary}`} /></button>
+                  </div>
+                </div>
+                <p className={`text-xs ${textTertiary} mb-1.5 italic`}>Scene: {seg.scene}</p>
+                {editingSegment === i ? (
+                  <textarea value={seg.text} onChange={e => { const next = [...scriptData]; next[i] = { ...next[i], text: e.target.value }; setScriptData(next); }}
+                    className={`w-full text-sm ${textPrimary} ${inputBg} rounded-lg p-2 border ${cardBorder} outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed`} rows={3} autoFocus />
+                ) : (
+                  <p className={`text-sm ${textPrimary} leading-relaxed`}>{seg.text}</p>
+                )}
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className={`text-xs ${textTertiary}`}>{seg.text.split(' ').length} words</span>
+                  {i === activeSegment && isPlaying && (
+                    <div className="flex items-center gap-1">
+                      <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                      <span className="text-xs text-blue-500 font-medium">Playing</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const SettingsScreen = () => (
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className={`text-2xl font-bold ${textPrimary} mb-6`}>Settings</h1>
+        <div className="flex gap-6">
+          <div className="w-48 flex-shrink-0 space-y-0.5">
+            {[
+              { id: 'appearance', icon: Palette, label: 'Appearance' },
+              { id: 'voice', icon: Mic, label: 'Voice & Language' },
+              { id: 'export', icon: Download, label: 'Export Defaults' },
+              { id: 'accessibility', icon: Eye, label: 'Accessibility' },
+              { id: 'notifications', icon: BellRing, label: 'Notifications' },
+              { id: 'account', icon: User, label: 'Account' },
+              { id: 'security', icon: Shield, label: 'Security' },
+              { id: 'billing', icon: CreditCard, label: 'Billing' },
+            ].map(item => (
+              <button key={item.id} onClick={() => setSettingsTab(item.id)}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-all ${settingsTab === item.id ? (dark ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-50 text-blue-700') : `${textSecondary} ${hoverBg}`}`}>
+                <item.icon style={{ width: 16, height: 16 }} className="flex-shrink-0" />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className={`flex-1 ${cardBg} rounded-xl border ${cardBorder} p-6`}>
+            {settingsTab === 'appearance' && (
+              <>
+                <h2 className={`text-base font-semibold ${textPrimary} mb-4`}>Appearance</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className={`text-sm font-medium ${textPrimary} block mb-2`}>Theme</label>
+                    <div className="flex gap-3">
+                      {['Light', 'Dark', 'System'].map(t => (
+                        <button key={t} onClick={() => { if (t === 'Dark') setDark(true); if (t === 'Light') setDark(false); }}
+                          className={`flex-1 p-3 rounded-lg border ${(t === 'Dark' && dark) || (t === 'Light' && !dark) ? 'border-blue-500 bg-blue-50/50' : cardBorder} text-center ${hoverBg} transition-all`}>
+                          <div className="flex justify-center mb-2">
+                            {t === 'Light' ? <Sun className="w-5 h-5 text-amber-500" /> : t === 'Dark' ? <Moon className="w-5 h-5 text-indigo-400" /> : <Monitor className="w-5 h-5 text-gray-400" />}
+                          </div>
+                          <span className={`text-xs font-medium ${textPrimary}`}>{t}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`text-sm font-medium ${textPrimary} block mb-2`}>Editor Font Size</label>
+                    <select className={`${inputBg} border ${cardBorder} rounded-lg px-3 py-2 text-sm ${textPrimary} outline-none focus:ring-2 focus:ring-blue-500 w-40`}>
+                      <option>14px</option><option>16px (Default)</option><option>18px</option><option>20px</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div><p className={`text-sm font-medium ${textPrimary}`}>Reduced Animations</p><p className={`text-xs ${textSecondary}`}>Minimize motion for accessibility</p></div>
+                    <button className={`w-11 h-6 rounded-full ${dark ? 'bg-slate-600' : 'bg-gray-300'} relative transition-all`}>
+                      <div className="w-5 h-5 rounded-full bg-white shadow absolute top-0.5 left-0.5" />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+            {settingsTab === 'voice' && (
+              <>
+                <h2 className={`text-base font-semibold ${textPrimary} mb-4`}>Voice & Language</h2>
+                <div className="space-y-4">
+                  <div><label className={`text-sm font-medium ${textPrimary} block mb-2`}>Script Language</label>
+                    <select className={`${inputBg} border ${cardBorder} rounded-lg px-3 py-2 text-sm ${textPrimary} outline-none w-56`}>
+                      <option>English (US)</option><option>English (UK)</option><option>Spanish</option><option>French</option>
+                    </select></div>
+                  <div><label className={`text-sm font-medium ${textPrimary} block mb-2`}>Tone of Voice</label>
+                    <select className={`${inputBg} border ${cardBorder} rounded-lg px-3 py-2 text-sm ${textPrimary} outline-none w-56`}>
+                      <option>Professional</option><option>Conversational</option><option>Educational</option><option>Enthusiastic</option>
+                    </select></div>
+                </div>
+              </>
+            )}
+            {settingsTab !== 'appearance' && settingsTab !== 'voice' && (
+              <>
+                <h2 className={`text-base font-semibold ${textPrimary} mb-4`}>{settingsTab.charAt(0).toUpperCase() + settingsTab.slice(1)} Settings</h2>
+                <p className={`text-sm ${textSecondary}`}>Configure your {settingsTab} preferences here.</p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ExportModal = () => (
+    <AnimatePresence>
+      {showExport && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="absolute inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowExport(false)}>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+            className={`${cardBg} rounded-2xl shadow-2xl border ${cardBorder} w-full max-w-lg mx-4 overflow-hidden`}
+            onClick={e => e.stopPropagation()}>
+            <div className={`flex items-center justify-between px-6 py-4 border-b ${cardBorder}`}>
+              <h2 className={`text-base font-semibold ${textPrimary}`}>Export Script</h2>
+              <button onClick={() => setShowExport(false)} className={`p-1.5 rounded-lg ${hoverBg}`}><X className={`w-4 h-4 ${textSecondary}`} /></button>
+            </div>
+            <div className="p-6">
+              <p className={`text-sm ${textSecondary} mb-4`}>Choose your preferred export format</p>
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                {exportFormats.map(f => (
+                  <button key={f.id} onClick={() => setSelectedExport(f.id)}
+                    className={`p-3 rounded-lg border text-center transition-all ${selectedExport === f.id ? 'border-blue-500 bg-blue-50 shadow-sm' : cardBorder + ' ' + hoverBg}`}>
+                    <f.icon className={`w-6 h-6 mx-auto mb-1.5 ${selectedExport === f.id ? 'text-blue-600' : textSecondary}`} />
+                    <p className={`text-xs font-medium ${selectedExport === f.id ? 'text-blue-700' : textPrimary}`}>{f.name}</p>
+                    <p className={`text-xs ${textTertiary}`}>{f.ext}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="space-y-3 mb-6">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className={`text-sm ${textPrimary}`}>Include timestamps</span>
+                  <button onClick={() => setIncludeTimestamps(!includeTimestamps)}
+                    className={`w-11 h-6 rounded-full relative transition-all ${includeTimestamps ? 'bg-blue-600' : (dark ? 'bg-slate-600' : 'bg-gray-300')}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${includeTimestamps ? 'left-5' : 'left-0.5'}`} />
+                  </button>
+                </label>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className={`text-sm ${textPrimary}`}>Include scene descriptions</span>
+                  <button onClick={() => setIncludeSpeaker(!includeSpeaker)}
+                    className={`w-11 h-6 rounded-full relative transition-all ${includeSpeaker ? 'bg-blue-600' : (dark ? 'bg-slate-600' : 'bg-gray-300')}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${includeSpeaker ? 'left-5' : 'left-0.5'}`} />
+                  </button>
+                </label>
+              </div>
+              <button onClick={() => { setShowExport(false); showToast('Script exported successfully!'); }}
+                className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium text-sm shadow-lg shadow-blue-500/25 hover:from-blue-700 hover:to-blue-800 transition-all">
+                Export as {exportFormats.find(f => f.id === selectedExport)?.name}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  const renderScreen = () => {
+    switch (screen) {
+      case 'upload': return <UploadScreen />;
+      case 'processing': return <ProcessingScreen />;
+      case 'editor': return <EditorScreen />;
+      case 'settings': return <SettingsScreen />;
+      default: return <UploadScreen />;
+    }
+  };
+
+  return (
+    <div className={`w-full h-screen ${bg} flex overflow-hidden relative`} style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopBar />
+        <AnimatePresence mode="wait">
+          <motion.div key={screen} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
+            className="flex-1 flex flex-col overflow-hidden">
+            {renderScreen()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      <ExportModal />
+      <AnimatePresence>
+        {toast && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl shadow-2xl">
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-sm font-medium">{toast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
