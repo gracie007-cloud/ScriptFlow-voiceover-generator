@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ScriptFlow Voiceover Script Generator</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <header class="app-header">
+        <a class="brand" href="#" data-screen="dashboard" aria-label="ScriptFlow dashboard">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <path d="M35 10H20c-7 0-11 4-11 10s4 10 11 10h9c5 0 8 3 8 7s-3 7-8 7H10" />
+              <path d="M28 18h10l-7 7" />
+              <path d="M10 38h13" />
+            </svg>
+          </span>
+          <span>ScriptFlow</span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Main navigation">
+          <button class="nav-item active" type="button" data-screen="dashboard">Dashboard</button>
+          <button class="nav-item" type="button" data-screen="projects">Projects</button>
+          <button class="nav-item" type="button" data-screen="editor">Editor</button>
+          <button class="nav-item" type="button" data-screen="settings">Settings</button>
+        </nav>
+
+        <div class="header-actions">
+          <label class="search-box" aria-label="Search projects">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35" /><circle cx="11" cy="11" r="7" /></svg>
+            <input id="searchInput" type="search" placeholder="Search projects" />
+          </label>
+          <button class="icon-button" id="themeBtn" type="button" title="Toggle theme" aria-label="Toggle theme">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 7.2A9 9 0 1 1 12 3Z" /></svg>
+          </button>
+          <button class="icon-button has-dot" id="notifBtn" type="button" title="Notifications" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+          </button>
+          <button class="avatar-button" type="button" aria-label="Profile menu">JS</button>
+        </div>
+
+        <div class="notification-popover" id="notificationPopover" aria-label="Notifications panel">
+          <div class="popover-title">
+            <strong>Notifications</strong>
+            <button type="button" id="markReadBtn">Mark all read</button>
+          </div>
+          <div id="notificationList"></div>
+        </div>
+      </header>
+
+      <main>
+        <section class="screen screen-dashboard active" id="dashboardScreen" aria-label="Upload dashboard">
+          <div class="hero-copy">
+            <h1>Transform Your Videos into Perfect Voiceover Scripts</h1>
+            <p>AI-powered script generation in minutes for product demos, lessons, campaigns, and course content.</p>
+          </div>
+
+          <div class="stats-grid" aria-label="Script statistics">
+            <article class="stat-card">
+              <span class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M8 13h8" /><path d="M8 17h6" /></svg></span>
+              <strong>48</strong>
+              <span>Total Scripts</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon teal"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36" /><path d="M21 3v6h-6" /></svg></span>
+              <strong id="processingCount">2</strong>
+              <span>Processing</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon green"><svg viewBox="0 0 24 24"><path d="M8 2v4" /><path d="M16 2v4" /><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M3 10h18" /></svg></span>
+              <strong>12</strong>
+              <span>This Month</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon amber"><svg viewBox="0 0 24 24"><path d="m12 2 3 6 6.6 1-4.8 4.7 1.1 6.6L12 17.2 6.1 20.3l1.1-6.6L2.4 9 9 8Z" /></svg></span>
+              <strong>94%</strong>
+              <span>Avg Quality</span>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="upload-panel" aria-label="Upload video">
+              <label class="drop-zone" id="dropZone" for="videoInput">
+                <input id="videoInput" type="file" accept="video/*" />
+                <span class="upload-cloud" aria-hidden="true">
+                  <svg viewBox="0 0 64 64">
+                    <path d="M21 49h24a12 12 0 0 0 1.4-23.9A18 18 0 0 0 12.3 31 9.5 9.5 0 0 0 21 49Z" />
+                    <path d="M32 43V27" />
+                    <path d="m24 35 8-8 8 8" />
+                  </svg>
+                </span>
+                <strong>Drag and drop your video here or click to browse</strong>
+                <span>Supported formats: MP4, MOV, AVI, WebM. Max 2GB.</span>
+                <button class="gradient-action" type="button" id="browseBtn">Upload Video <span aria-hidden="true">&rarr;</span></button>
+              </label>
+
+              <div class="generator-options" aria-label="Script generation options">
+                <label>
+                  <span>Script style</span>
+                  <select id="scriptStyle">
+                    <option>Product demo</option>
+                    <option>Course lesson</option>
+                    <option>Explainer</option>
+                    <option>Social short</option>
+                    <option>Documentary</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Tone</span>
+                  <select id="tone">
+                    <option>Professional</option>
+                    <option>Warm</option>
+                    <option>Energetic</option>
+                    <option>Calm</option>
+                    <option>Persuasive</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Audience</span>
+                  <input id="audience" value="Online creators and course designers" />
+                </label>
+              </div>
+            </section>
+
+            <aside class="recent-panel" aria-label="Recent projects">
+              <div class="panel-heading">
+                <h2>Recent Projects</h2>
+                <button type="button" data-screen="projects">View all</button>
+              </div>
+              <div class="project-list" id="recentProjects"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="screen screen-processing" id="processingScreen" aria-label="Script generation processing">
+          <div class="processing-title">
+            <button class="back-button" type="button" data-screen="dashboard">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              Preview
+            </button>
+            <h1 id="processingFileName">My_Video_Project.mp4</h1>
+          </div>
+
+          <div class="processing-grid">
+            <section class="video-card" aria-label="Video preview">
+              <div class="video-window" id="videoWindow">
+                <video id="videoPreview" playsinline muted></video>
+                <div class="video-placeholder" id="videoPlaceholder">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" /></svg>
+                </div>
+                <button class="play-overlay" id="previewPlayBtn" type="button" aria-label="Preview video">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" /></svg>
+                </button>
+              </div>
+              <div class="video-controls" aria-label="Video metadata">
+                <span>Duration: <strong id="videoDuration">14:32</strong></span>
+                <span>Resolution: <strong>1080p</strong></span>
+                <span>Format: <strong id="videoFormat">MP4</strong></span>
+                <span>Size: <strong id="videoSize">450 MB</strong></span>
+              </div>
+            </section>
+
+            <section class="processing-card" aria-label="Generation status">
+              <h2>Generating Your Script...</h2>
+              <div class="waveform" aria-hidden="true">
+                <svg viewBox="0 0 700 180">
+                  <path class="wave wave-one" d="M20 92 C85 92 90 68 145 68 C220 68 220 122 295 122 C360 122 370 36 435 36 C500 36 505 145 570 145 C620 145 640 92 680 92" />
+                  <path class="wave wave-two" d="M20 92 C80 92 105 120 155 120 C220 120 235 48 302 48 C365 48 382 138 445 138 C520 138 535 66 590 66 C640 66 660 92 680 92" />
+                </svg>
+              </div>
+              <div class="progress-readout">
+                <strong id="progressNumber">0%</strong>
+                <div>
+                  <span id="progressLabel">Preparing upload...</span>
+                  <small id="etaLabel">Estimated time remaining: ~2 minutes</small>
+                </div>
+              </div>
+              <div class="progress-track" aria-label="Generation progress"><span id="progressFill"></span></div>
+              <div class="step-grid" id="stepGrid"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="screen screen-editor" id="editorScreen" aria-label="Script editor">
+          <div class="editor-top">
+            <div class="mini-brand" aria-hidden="true">
+              <span class="brand-mark"><svg viewBox="0 0 48 48"><path d="M35 10H20c-7 0-11 4-11 10s4 10 11 10h9c5 0 8 3 8 7s-3 7-8 7H10" /><path d="M28 18h10l-7 7" /><path d="M10 38h13" /></svg></span>
+            </div>
+            <h1>Script Editor</h1>
+            <div class="editor-actions">
+              <button class="ghost-action" id="saveScriptBtn" type="button">
+                <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8" /><path d="M7 3v5h8" /></svg>
+                Save
+              </button>
+              <button class="gradient-action" id="openExportBtn" type="button">
+                <svg viewBox="0 0 24 24"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+                Export
+              </button>
+              <button class="ghost-action" id="shareBtn" type="button">
+                <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
+                Share
+              </button>
+            </div>
+          </div>
+
+          <div class="format-toolbar" aria-label="Script formatting tools">
+            <button type="button" class="format-button" data-format="bold" title="Bold"><strong>B</strong></button>
+            <button type="button" class="format-button italic" data-format="italic" title="Italic">I</button>
+            <button type="button" class="format-button underline" data-format="underline" title="Underline">U</button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="format-button wide" id="timestampSyncBtn">
+              <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
+              Timestamp Sync
+            </button>
+            <span class="toolbar-spacer"></span>
+            <button type="button" class="format-button" id="undoBtn" title="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-1" /></svg></button>
+            <button type="button" class="format-button" id="redoBtn" title="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h1" /></svg></button>
+          </div>
+
+          <div class="editor-grid">
+            <section class="player-panel" aria-label="Video player">
+              <div class="large-video">
+                <video id="editorVideo" playsinline muted></video>
+                <span id="editorTimeDisplay">00:00</span>
+              </div>
+              <input id="timelineRange" type="range" min="0" max="55" value="0" aria-label="Video timeline" />
+              <div class="player-controls">
+                <button class="media-button" id="playBtn" type="button" aria-label="Play or pause">
+                  <svg viewBox="0 0 24 24" id="playIcon"><path d="m8 5 11 7-11 7Z" /></svg>
+                </button>
+                <button class="media-button" id="stopBtn" type="button" aria-label="Stop"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1" /></svg></button>
+                <button class="media-button" id="nextSegmentBtn" type="button" aria-label="Next segment"><svg viewBox="0 0 24 24"><path d="m6 5 10 7-10 7Z" /><path d="M18 5v14" /></svg></button>
+                <span id="editorDuration">00:55</span>
+                <label class="speed-select">Speed
+                  <select id="speedSelect">
+                    <option value="0.75">0.75</option>
+                    <option value="1" selected>1.0</option>
+                    <option value="1.25">1.25</option>
+                    <option value="1.5">1.5</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="script-panel" aria-label="Generated script">
+              <div class="script-heading">
+                <div>
+                  <h2>Generated Script</h2>
+                  <p><span id="wordCount">0</span> words across <span id="segmentCount">0</span> timestamped scenes</p>
+                </div>
+                <button class="copy-button" id="copyScriptBtn" type="button">
+                  <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                  Copy
+                </button>
+              </div>
+              <div class="segments" id="segments"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="screen screen-projects" id="projectsScreen" aria-label="Projects">
+          <div class="page-title-row">
+            <div>
+              <h1>Projects</h1>
+              <p>Recent voiceover scripts, drafts, and exports.</p>
+            </div>
+            <button class="gradient-action" type="button" data-screen="dashboard">New Upload</button>
+          </div>
+          <div class="project-board" id="projectBoard"></div>
+        </section>
+
+        <section class="screen screen-settings" id="settingsScreen" aria-label="Settings">
+          <div class="page-title-row">
+            <div>
+              <h1>Settings</h1>
+              <p>Control theme, language, exports, notifications, and accessibility.</p>
+            </div>
+          </div>
+          <div class="settings-layout">
+            <nav class="settings-tabs" aria-label="Settings categories">
+              <button class="settings-tab active" type="button" data-settings="appearance">Appearance</button>
+              <button class="settings-tab" type="button" data-settings="voice">Voice and Language</button>
+              <button class="settings-tab" type="button" data-settings="export">Export</button>
+              <button class="settings-tab" type="button" data-settings="accessibility">Accessibility</button>
+              <button class="settings-tab" type="button" data-settings="notifications">Notifications</button>
+              <button class="settings-tab" type="button" data-settings="account">Account</button>
+            </nav>
+            <div class="settings-panel" id="settingsPanel"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="export-modal" id="exportModal" aria-labelledby="exportTitle">
+      <form method="dialog">
+        <div class="modal-header">
+          <h2 id="exportTitle">Export Script</h2>
+          <button class="icon-button" value="cancel" aria-label="Close export modal">
+            <svg viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+          </button>
+        </div>
+        <div class="export-grid" id="exportFormats"></div>
+        <div class="export-options">
+          <div>
+            <h3>Additional Options</h3>
+            <label class="toggle-line"><input id="includeTimestamps" type="checkbox" checked /> Include timestamps</label>
+            <label class="toggle-line"><input id="includeScenes" type="checkbox" checked /> Include scene descriptions</label>
+            <label class="field-line">Font size
+              <select id="exportFontSize"><option>Medium</option><option>Large</option><option>Compact</option></select>
+            </label>
+            <div class="radio-row">
+              <span>Page layout</span>
+              <label><input name="pageLayout" type="radio" checked /> Portrait</label>
+              <label><input name="pageLayout" type="radio" /> Landscape</label>
+            </div>
+          </div>
+          <div class="document-preview" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="gradient-action" id="downloadExportBtn" type="button">Export</button>
+          <button class="ghost-action dark" value="cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
